@@ -12191,8 +12191,6 @@
 
 
 
-
-
 -- ==========================================
 -- SCRIPT UTAMA + GUI ZYPHORA HUB (MOBILE)
 -- ==========================================
@@ -12212,7 +12210,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local Zyphora = loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyphoraHubLiblaryV2/ZyphoraV2Liblary/refs/heads/main/Main"))()
 
-local Window = Zyphora.new("Zyphora Hub", "Paper Plane For Brainrot 1.1.0")
+local Window = Zyphora.new("Zyphora Hub", "Paper Plane For Brainrot 1.0.0")
 
 -- =================================================================
 -- CREATE TABS
@@ -12318,16 +12316,13 @@ local function ClickLaunchFrame()
 end
 
 local function ClickIdkFrame()
-    local frame = LocalPlayer.PlayerGui:FindFirstChild("EquipBest", true)
+    -- Cari semua GUI di player
+    local gui = LocalPlayer.PlayerGui
     
-    if frame and frame:IsA("Frame") and frame.Visible then
-        local pos = frame.AbsolutePosition
-        local size = frame.AbsoluteSize
-        mouse1click(pos.X + size.X/-9999, pos.Y + size.Y/-9999)
-        return true
-    else
-        return false
-    end
+    -- Klik di luar GUI dengan mengklik koordinat yang pasti di luar layar GUI
+    -- Misal klik di pojok kiri atas layar (0,0) atau di luar area GUI
+    mouse1click(0, 0) -- Klik di pojok kiri atas layar
+    return true
 end
 
 local function GetNearestLaunchZone()
@@ -12590,4 +12585,4 @@ end)
 -- NOTIF LOADED
 -- =================================================================
 
-Window:Notify("Zyphora Hub", "Script Loaded!!", 3)
+Window:Notify("Zyphora Hub", "Script Loaded!!!", 3)
