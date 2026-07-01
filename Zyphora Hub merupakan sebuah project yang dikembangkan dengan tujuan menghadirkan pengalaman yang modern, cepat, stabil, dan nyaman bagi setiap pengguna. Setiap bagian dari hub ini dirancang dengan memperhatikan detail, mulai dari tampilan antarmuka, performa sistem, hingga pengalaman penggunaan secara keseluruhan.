@@ -12525,8 +12525,6 @@ MainTab:AddToggle("Auto Farm", 10734950309, false, function(v)
     Window:Notify("Zyphora Hub", "Auto Farm "..(v and "ON" or "OFF"), 3)
 end)
 
-MainTab:AddLabel("Note", 10734950309, "Auto Farm = Harus Tutup Gui Biar Ga Bug", true)
-
 MainTab:AddToggle("Auto Rebirth", 10734950309, false, function(v)
     AutoRebirth = v
     Window:Notify("Zyphora Hub", "Auto Rebirth "..(v and "ON" or "OFF"), 3)
