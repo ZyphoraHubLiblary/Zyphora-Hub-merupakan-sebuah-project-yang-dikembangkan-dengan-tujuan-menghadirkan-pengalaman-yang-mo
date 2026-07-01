@@ -1,0 +1,451 @@
+-- ==========================================
+-- SCRIPT UTAMA + GUI ZYPHORA HUB
+-- ==========================================
+
+--// SERVICES
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
+
+-- =================================================================
+-- LOAD LIBRARY ZYPHORA
+-- =================================================================
+
+local Zyphora = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/ZyphoraHubLiblaryV2/ZyphoraV2Liblary/refs/heads/main/Main"
+))()
+
+local Window = Zyphora.new(
+    "Zyphora Hub",
+    "Paper Plane For Brainrot 1.0.0"
+)
+
+-- =================================================================
+-- CREATE TABS
+-- =================================================================
+
+local MainTab = Window:CreateTab("Auto Farm", 10734950309)
+local BaseTab = Window:CreateTab("Base", 10734950309)
+local ShopTab = Window:CreateTab("Shop", 10734950309)
+local ExtraTab = Window:CreateTab("Misc", 10734950309)
+
+-- =================================================================
+-- VARIABLES MAIN TAB
+-- =================================================================
+
+local AutoUpgradePlot = false
+local AutoRebirth = false
+local AutoRequestBoth = false
+local AutoClaimMode = false
+local AutoUpgradeBrainrots = false
+local AutoCollectCash = false
+local AutoSellBrainrots = false
+
+-- =================================================================
+-- VARIABLES SHOP TAB
+-- =================================================================
+
+local SelectedSpeed = 1
+local SelectedWeight = "001_Weight"
+
+-- =================================================================
+-- FUNGSI UTAMA (DARI SCRIPT PERTAMA)
+-- =================================================================
+
+local function TeleportToPosition(pos)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp and pos then
+        hrp.CFrame = CFrame.new(pos)
+        return true
+    else
+        return false
+    end
+end
+
+local function ClickLaunchFrame()
+    local frame = LocalPlayer.PlayerGui:FindFirstChild("LaunchBtn", true)
+    
+    if frame and frame:IsA("Frame") and frame.Visible then
+        local pos = frame.AbsolutePosition
+        local size = frame.AbsoluteSize
+        mouse1click(pos.X + size.X/2, pos.Y + size.Y/0.5,6)
+        return true
+    else
+        return false
+    end
+end
+
+local function GetNearestLaunchZone()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local nearest = nil
+    local nearestDist = math.huge
+    local playerPos = hrp.Position
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "LaunchZone" then
+            local pos = nil
+            if obj:IsA("BasePart") then
+                pos = obj.Position
+            elseif obj:IsA("Model") and obj.PrimaryPart then
+                pos = obj.PrimaryPart.Position
+            end
+            
+            if pos then
+                local dist = (playerPos - pos).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearest = {object = obj, position = pos}
+                end
+            end
+        end
+    end
+    
+    return nearest
+end
+
+local function TeleportToLaunchZone()
+    local zone = GetNearestLaunchZone()
+    if not zone then return false end
+    
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(zone.position)
+        return true
+    end
+    return false
+end
+
+local function FindNearestClaimProxyPrompt()
+    local character = LocalPlayer.Character
+    if not character then 
+        return nil 
+    end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then 
+        return nil 
+    end
+    
+    local nearestPrompt = nil
+    local nearestDist = math.huge
+    local promptPosition = nil
+    
+    local prompts = Workspace:GetDescendants()
+    
+    for _, obj in ipairs(prompts) do
+        if obj:IsA("ProximityPrompt") and obj.ActionText == "Claim" then
+            local pos = nil
+            
+            if obj.Parent then
+                local positionObj = obj.Parent:FindFirstChild("Position")
+                if positionObj then
+                    pos = positionObj.Position
+                elseif obj.Parent:IsA("BasePart") then
+                    pos = obj.Parent.Position
+                elseif obj.Parent:IsA("Model") then
+                    local rootPart = obj.Parent:FindFirstChild("HumanoidRootPart") or obj.Parent:FindFirstChild("Head")
+                    if rootPart then
+                        pos = rootPart.Position
+                    end
+                end
+            end
+            
+            if not pos then
+                local attachment = obj:FindFirstChild("Attachment")
+                if attachment then
+                    pos = attachment.WorldPosition
+                end
+            end
+            
+            if pos then
+                local dist = (hrp.Position - pos).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestPrompt = obj
+                    promptPosition = pos
+                end
+            end
+        end
+    end
+    
+    if nearestPrompt then
+        return nearestPrompt, promptPosition, nearestDist
+    else
+        return nil
+    end
+end
+
+local function WaitForClaimProxyprompt(timeout)
+    timeout = timeout or 10
+    
+    local startTime = tick()
+    
+    while tick() - startTime < timeout do
+        local prompt, pos = FindNearestClaimProxyPrompt()
+        if prompt then
+            return prompt, pos
+        end
+        task.wait(0.5)
+    end
+    
+    return nil
+end
+
+local function FireClaimPrompt(prompt)
+    if not prompt then return false end
+    
+    local success, err = pcall(function()
+        fireproximityprompt(prompt)
+    end)
+    
+    if success then
+        return true
+    else
+        return false
+    end
+end
+
+local function ExecuteClaim()
+    pcall(function()
+        TeleportToLaunchZone()
+        task.wait(0.1)
+        
+        ClickLaunchFrame()
+        task.wait(0.3)
+        
+        task.wait(0.1)
+        ClickLaunchFrame()
+        
+        local prompt, pos = WaitForClaimProxyprompt(math.huge)
+        
+        if prompt and pos then
+            TeleportToPosition(pos)
+            task.wait(1)
+            
+            local firedCount = 0
+            local prompts = workspace:GetDescendants()
+            
+            for _, v in pairs(prompts) do
+                if v:IsA("ProximityPrompt") and v.ActionText == "Claim" then
+                    local promptPos = nil
+                    if v.Parent and v.Parent:IsA("BasePart") then
+                        promptPos = v.Parent.Position
+                    elseif v.Parent and v.Parent:IsA("Model") and v.Parent.PrimaryPart then
+                        promptPos = v.Parent.PrimaryPart.Position
+                    end
+                    
+                    if promptPos then
+                        TeleportToPosition(promptPos)
+                        task.wait(0.3)
+                    end
+                    
+                    if FireClaimPrompt(v) then
+                        firedCount = firedCount + 1
+                    end
+                    
+                    task.wait(0.5)
+                end
+            end
+            
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.ActionText == "Claim" then
+                    pcall(function()
+                        fireproximityprompt(v)
+                    end)
+                end
+            end
+        end
+    end)
+end
+
+-- =================================================================
+-- AUTO CLAIM MODE (LOOP)
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if AutoClaimMode then
+            pcall(ExecuteClaim)
+        end
+    end
+end)
+
+-- =================================================================
+-- AUTO UPGRADE PLOT (LOOP)
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoUpgradePlot then
+            pcall(function()
+                ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("UpgradePlot"):InvokeServer()
+            end)
+            task.wait(0.05)
+        end
+    end
+end)
+
+-- =================================================================
+-- AUTO REBIRTH (LOOP)
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoRebirth then
+            pcall(function()
+                ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("Rebirth"):InvokeServer()
+            end)
+            task.wait(0.05)
+        end
+    end
+end)
+
+-- =================================================================
+-- AUTO REQUEST STRENGTH + DOUBLE STRENGTH (LOOP BERSAMAAN)
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoRequestBoth then
+            pcall(function()
+                local net = ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network")
+                net.RequestStrength:InvokeServer()
+                net.RequestDoubleStrength:InvokeServer()
+            end)
+            task.wait(0.05)
+        end
+    end
+end)
+
+-- =================================================================
+-- MODULE: AUTO COLLECT CASH (CLAIM ALL EARNINGS)
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoCollectCash then
+            pcall(function()
+                ReplicatedStorage.SharedModules.Network.ClaimAllEarnings:InvokeServer()
+            end)
+            task.wait(0.1)
+        end
+    end
+end)
+
+-- =================================================================
+-- MODULE: AUTO SELL BRAINROTS
+-- =================================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoSellBrainrots then
+            pcall(function()
+                ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("SellAllBrainrots"):InvokeServer()
+            end)
+            task.wait(0.1)
+        end
+    end
+end)
+
+-- =================================================================
+-- ADD TOGGLES KE MAIN TAB
+-- =================================================================
+
+MainTab:AddToggle("Auto Farm", 10734950309, false, function(v)
+    AutoClaimMode = v
+    Window:Notify("Zyphora Hub", "Auto Farm "..(v and "ON" or "OFF"), 3)
+end)
+
+MainTab:AddLabel("Note", 10734950309, "Auto Farm = Harus Tutup Gui Biar Ga Bug", true)
+
+MainTab:AddToggle("Auto Rebirth", 10734950309, false, function(v)
+    AutoRebirth = v
+    Window:Notify("Zyphora Hub", "Auto Rebirth "..(v and "ON" or "OFF"), 3)
+end)
+
+MainTab:AddToggle("Auto Train", 10734950309, false, function(v)
+    AutoRequestBoth = v
+    Window:Notify("Zyphora Hub", "Auto Train "..(v and "ON" or "OFF"), 3)
+end)
+
+-- =================================================================
+-- ADD TOGGLES KE BASE TAB
+-- =================================================================
+
+BaseTab:AddToggle("Auto Collect Cash", 10734950309, false, function(v)
+    AutoCollectCash = v
+    Window:Notify("Zyphora Hub", "Auto Collect Cash "..(v and "ON" or "OFF"), 3)
+end)
+
+BaseTab:AddToggle("Auto Upgrade Plot", 10734950309, false, function(v)
+    AutoUpgradePlot = v
+    Window:Notify("Zyphora Hub", "Auto Upgrade Plot "..(v and "ON" or "OFF"), 3)
+end)
+
+-- =================================================================
+-- ADD TOGGLES KE EXTRA TAB
+-- =================================================================
+
+ExtraTab:AddToggle("Auto Sell Brainrots", 10734950309, false, function(v)
+    AutoSellBrainrots = v
+    Window:Notify("Zyphora Hub", "Auto Sell Brainrots "..(v and "ON" or "OFF"), 3)
+end)
+
+ExtraTab:AddButton("Sell All Brainrots (1x)", 10734950309, function()
+    pcall(function()
+        ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("SellAllBrainrots"):InvokeServer()
+        Window:Notify("Zyphora Hub", "Sell All Brainrots Success", 3)
+    end)
+end)
+
+-- =================================================================
+-- ADD DROPDOWN + 2 BUTTON KE SHOP TAB
+-- =================================================================
+
+ShopTab:AddDropdown("Speed Level", 10734950309, {"1", "2", "3"}, "1", function(v)
+    SelectedSpeed = tonumber(v)
+    Window:Notify("Zyphora Hub", "Speed Level: "..v, 3)
+end)
+
+ShopTab:AddButton("Buy Speed (1x)", 10734950309, function()
+    pcall(function()
+        local args = { SelectedSpeed }
+        ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("BuySpeed"):InvokeServer(unpack(args))
+        Window:Notify("Zyphora Hub", "Buy Speed "..SelectedSpeed.." Success", 3)
+    end)
+end)
+
+ShopTab:AddDropdown("Weight Level", 10734950309, {"001_Weight", "002_Weight", "003_Weight", "004_Weight", "005_Weight", "006_Weight", "007_Weight", "008_Weight", "009_Weight", "010_Weight", "011_Weight", "012_Weight"}, "001_Weight", function(v)
+    SelectedWeight = v
+    Window:Notify("Zyphora Hub", "Weight Level: "..v, 3)
+end)
+
+ShopTab:AddButton("Buy Weight (1x)", 10734950309, function()
+    pcall(function()
+        local args = { SelectedWeight }
+        ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Network"):WaitForChild("BuyWeight"):InvokeServer(unpack(args))
+        Window:Notify("Zyphora Hub", "Buy Weight "..SelectedWeight.." Success", 3)
+    end)
+end)
+
+-- =================================================================
+-- NOTIF LOADED
+-- =================================================================
+
+Window:Notify("Zyphora Hub", "Script Loaded", 3)
