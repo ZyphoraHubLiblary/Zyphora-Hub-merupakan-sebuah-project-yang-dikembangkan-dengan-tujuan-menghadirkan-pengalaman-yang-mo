@@ -12210,7 +12210,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local Zyphora = loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyphoraHubLiblaryV2/ZyphoraV2Liblary/refs/heads/main/Main"))()
 
-local Window = Zyphora.new("Zyphora Hub", "Paper Plane For Brainrot 1.0.0")
+local Window = Zyphora.new("Zyphora Hub", "Paper Plane For Brainrot 1.1.1")
 
 -- =================================================================
 -- CREATE TABS
@@ -12439,7 +12439,7 @@ local function ExecuteClaim()
         task.wait(0.3)
         ClickIdkFrame()
         
-        local prompt, pos = WaitForClaimProxyprompt(99)
+        local prompt, pos = WaitForClaimProxyprompt(math.huge)
         if prompt and pos then
             TeleportToPosition(pos)
             task.wait(1)
